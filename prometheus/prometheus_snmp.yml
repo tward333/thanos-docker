@@ -1,0 +1,208 @@
+
+
+# my global config
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+  external_labels:
+    region: US1
+    monitor: snmp
+    replica: A
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+
+##these are dummy values
+  - job_name: 'snmp-edge'
+    scrape_interval: 1m
+    static_configs:
+      - targets: [
+            '10.0.0.145',
+            '10.0.0.146']
+    metrics_path: /snmp
+    params:
+      module: ['asr9k']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: mon.privatehost.com:9116  # The SNMP exporter's real hostname:port.
+  - job_name: 'snmp-aggr'
+    scrape_interval: 1m
+    scrape_timeout: 30s
+    static_configs:
+      - targets: [
+            '10.254.1.4',
+            '10.254.1.5',
+            '10.254.1.228',
+            '10.254.1.229',
+            '10.0.0.255',
+            '10.0.0.252']
+    metrics_path: /snmp
+    params:
+      module: ['aggr']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: mon.privatehost.com:9116  # The SNMP exporter's real hostname:port.
+  - job_name: 'snmp-ams'
+    scrape_interval: 1m
+    static_configs:
+      - targets: [
+            '10.0.0.253',
+            '10.0.0.254']
+    metrics_path: /snmp
+    params:
+      module: ['nexus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: mon.privatehost.com:9116  # The SNMP exporter's real hostname:port.
+  - job_name: 'snmp-apcs'
+    scrape_interval: 1m
+    scrape_timeout: 30s
+    static_configs:
+      - targets: [
+            'ap-j5.1',
+            'ap-x6.1',
+            'ap-x3.1',
+            'ap-h5.1',
+            'ap-z3.1',
+            'ap-z4.2',
+            'ap-x4.2',
+            'ap-z4.1',
+            'ap-x4.1',
+            'ap-x5.1',
+            'ap-z5.1',
+            'ap-x6.2',
+            'ap-j2.1',
+            'ap-j2.2',
+            'ap-k3.1',
+            'ap-k3.2',
+            'ap-i2.1',
+            'ap-i2.2',
+            'ap-i3.1',
+            'ap-i3.2',
+            'ap-a1.1',
+            'ap-a1.2',
+            'ap-a1.3',
+            'ap-a1.4',
+            'ap-a4.1',
+            'ap-a2.2',
+            'ap-a3.1',
+            'ap-a4.2',
+            'ap-z3.2',
+            'ap-a4.3',
+            'ap-a3.2',
+            'ap-c3.3',
+            'ap-b2.1',
+            'ap-x3.2',
+            'ap-c3.2',
+            'ap-c4.3',
+            'ap-b2.2',
+            'ap-x5.2',
+            'ap-b3.4',
+            'ap-a2.3',
+            'ap-c3.1',
+            'ap-b4.2',
+            'ap-c2.4',
+            'ap-c4.2',
+            'ap-c4.4',
+            'ap-b4.1',
+            'ap-b2.3',
+            'ap-b3.3',
+            'ap-c4.1',
+            'ap-h4.2',
+            'ap-h4.1',
+            'ap-h5.2',
+            'ap-h2.1',
+            'ap-b3.1',
+            'ap-b3.2',
+            'ap-a2.1',
+            'ap-c2.1',
+            'ap-h3.1',
+            'ap-h2.2',
+            'ap-h3.2',
+            'ap-c2.3',
+            'ap-c2.2',
+            'ap-a1.2',
+            'ap-z6.2',
+            'ap-d2.1',
+            'ap-d2.2',
+            'ap-d2.3',
+            'ap-d3.1',
+            'ap-d3.2',
+            'ap-d3.3',
+            'ap-d4.1',
+            'ap-d4.3',
+            'ap-a3.3',
+            'ap-d4.2',
+            'ap-g2.1',
+            'ap-g2.2',
+            'ap-g3.1',
+            'ap-g3.2',
+            'ap-g4.1',
+            'ap-g4.2',
+            'ap-g5.1',
+            'ap-g5.2',
+            'ap-j4.1',
+            'ap-j4.2',
+            'ap-z5.2',
+            'ap-z6.1',
+            'ap-i4.1',
+            'ap-i4.2',
+            'ap-i5.1',
+            'ap-i5.2',
+            'ap-j5.2',
+            'ap-k2.1',
+            'ap-k2.2',
+            'ap-j3.1',
+            'ap-j3.2',
+            'ap-k4.1',
+            'ap-k4.2',
+            'ap-k5.1',
+            'ap-k5.2',
+            'ap-k4.1',
+            'ap-k4.2',
+            'ap-k5.1',
+            'ap-k5.2',
+            'ap-z2.1',
+            'ap-x2.1',
+            'ap-x2.2',
+            'ap-x2.3',
+            'ap-z2.2',
+            'ap-z2.3',
+            'apc-a1.4',
+            'apc-a1.3']
+    metrics_path: /snmp
+    params:
+      module: ['apcups']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 10.10.1.115:9116  # The SNMP exporter's real hostname:port.

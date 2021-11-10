@@ -1,0 +1,20 @@
+#while true; do
+
+bin="./thanos/thanos.0.21.1"
+
+mv compact.log compact.log.1
+echo '' > compact.log
+
+###ceph compactor
+$bin compact --http-address="127.0.0.1:10903" --log.level=info --log.format=logfmt --objstore.config-file ./secret/ceph-ceph.txt --data-dir=./data/compactor/manual   --consistency-delay=2m --retention.resolution-raw=30d --retention.resolution-5m=60d --retention.resolution-1h=60d --block-sync-concurrency=20 --compact.concurrency=6 --delete-delay=0   |& tee compact.log
+
+deadfiles=$(grep -o -P '.{0,60}no such file or directory.{0,0}' compact.log|cut -d "/" -f2|sort|uniq)
+for i in $deadfiles; do rclone -v purge objcloud:/thanos-ceph1/$i ; done 
+
+#sleep 5m
+#done
+
+
+### not needed with --delete-delay=0 
+#$bin tools bucket cleanup --objstore.config-file ./secret/ceph-ceph.txt --log.level=info --log.format=logfmt
+

@@ -1,0 +1,35 @@
+thanos requires golang > 1.11
+rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO
+curl -s https://mirror.go-repo.io/centos/go-repo.repo | tee /etc/yum.repos.d/go-repo.repo
+yum -y install golang golang-bin golang-src
+
+
+==data migration steps
+delete.sh -- nuke bad data (before 2/11) in live prometheus-vanilla
+migrate.yml -- import data from prometheus-vanilla with --shipper.upload-compacted . Data will have "legacy" label
+let it spin, wait until bucket isn't growing anymore. Shutdown
+docker-compose.yml.minio -- bring normal thanos stack back online. Watch that data is appended correctly
+
+also make sure grafana isn't dumb now so grab any changes there
+also make sure new silent additions to prometheus weren't broken
+
+==useful commands
+ rclone sync objcloud:thanos-data-bucket2 minio:/thanos-data-bucket --progress --transfers 20 --checkers 20
+rsync -avP --delete /opt/docker/sysstat/grafana/ /opt/docker/thanos-docker-compose/data/grafana/
+docker-compose up -d --force-recreate --no-deps grafana
+
+docker-compose exec thanos_querier sh -c "/thanos --version"
+
+thanos target
+http://thanos_query_frontend:19090
+
+
+==thanos update steps
+download the latest release https://github.com/thanos-io/thanos/releases , extract
+PREFIX="." make build
+copy bin to local thanos dir (./thanos)
+docker-compose down
+docker-compose build
+docker-compose up -d
+(should do a bunch of build shit and then re-up docker-compose)
+

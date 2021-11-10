@@ -1,0 +1,178 @@
+
+
+# my global config
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+  external_labels:
+    region: US1
+    monitor: ceph
+    replica: A
+
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+       - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+   - "rules/ceph.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'ceph'
+    honor_labels: true
+    static_configs:
+      - targets: [
+             'nn3062.privatehost.com:9283',
+             'nn3064.privatehost.com:9283',
+             'nn3066.privatehost.com:9283'
+                 ]
+  - job_name: 'nginx-caches'
+    static_configs:
+      - targets: [
+             'nn3210.privatehost.com:9913',
+             'nn3211.privatehost.com:9913',
+             'nn3212.privatehost.com:9913',
+             'nn3213.privatehost.com:9913'
+                 ]
+  - job_name: 'ceph-nodes'
+    static_configs:
+      - targets: [
+            'nn3062.privatehost.com:9100',
+            'nn3064.privatehost.com:9100',
+            'nn3066.privatehost.com:9100',
+            'nn3067.privatehost.com:9100',
+            'nn3069.privatehost.com:9100',
+            'nn3100.privatehost.com:9100',
+            'nn3101.privatehost.com:9100',
+            'nn3102.privatehost.com:9100',
+            'nn3103.privatehost.com:9100',
+            'nn3104.privatehost.com:9100',
+            'nn3105.privatehost.com:9100',
+            'nn3106.privatehost.com:9100',
+            'nn3107.privatehost.com:9100',
+            'nn3108.privatehost.com:9100',
+            'nn3109.privatehost.com:9100',
+            'nn3110.privatehost.com:9100',
+            'nn3111.privatehost.com:9100',
+            'nn3112.privatehost.com:9100',
+            'nn3113.privatehost.com:9100',
+            'nn3114.privatehost.com:9100',
+            'nn3115.privatehost.com:9100',
+            'nn3116.privatehost.com:9100',
+            'nn3117.privatehost.com:9100',
+            'nn3118.privatehost.com:9100',
+            'nn3119.privatehost.com:9100',
+            'nn3120.privatehost.com:9100',
+            'nn3121.privatehost.com:9100',
+            'nn3122.privatehost.com:9100',
+            'nn3123.privatehost.com:9100',
+            'nn3124.privatehost.com:9100',
+            'nn3125.privatehost.com:9100',
+            'nn3126.privatehost.com:9100',
+            'nn3127.privatehost.com:9100',
+            'nn3128.privatehost.com:9100',
+            'nn3129.privatehost.com:9100',
+            'nn3130.privatehost.com:9100',
+            'nn3131.privatehost.com:9100',
+            'nn3132.privatehost.com:9100',
+            'nn3133.privatehost.com:9100',
+            'nn3134.privatehost.com:9100',
+            'nn3135.privatehost.com:9100',
+            'nn3136.privatehost.com:9100',
+            'nn3137.privatehost.com:9100',
+            'nn3138.privatehost.com:9100',
+            'nn3139.privatehost.com:9100',
+            'nn3209.privatehost.com:9100',
+            'nn3210.privatehost.com:9100',
+            'nn3211.privatehost.com:9100',
+            'nn3212.privatehost.com:9100',
+            'nn3213.privatehost.com:9100',
+            'nn3140.privatehost.com:9100',
+            'nn3141.privatehost.com:9100',
+            'nn3142.privatehost.com:9100',
+            'nn3143.privatehost.com:9100',
+            'nn3144.privatehost.com:9100',
+            'nn3145.privatehost.com:9100',
+            'nn3146.privatehost.com:9100',
+            'nn3147.privatehost.com:9100',
+            'nn3148.privatehost.com:9100',
+            'nn3149.privatehost.com:9100',
+            'nn3500.privatehost.com:9100',
+            'nn3501.privatehost.com:9100',
+            'nn3502.privatehost.com:9100',
+            'nn3503.privatehost.com:9100',
+            'nn3504.privatehost.com:9100',
+            'nn3505.privatehost.com:9100',
+            'nn3506.privatehost.com:9100',
+            'nn3507.privatehost.com:9100',
+            'nn3508.privatehost.com:9100',
+            'nn3509.privatehost.com:9100',
+            'nn3510.privatehost.com:9100',
+            'nn3511.privatehost.com:9100',
+            'nn3512.privatehost.com:9100',
+            'nn3513.privatehost.com:9100',
+            'nn3514.privatehost.com:9100',
+            'nn3515.privatehost.com:9100',
+            'nn3516.privatehost.com:9100',
+            'nn3517.privatehost.com:9100',
+            'nn3518.privatehost.com:9100',
+            'nn3519.privatehost.com:9100',
+            'nn3520.privatehost.com:9100',
+            'nn3521.privatehost.com:9100',
+            'nn3522.privatehost.com:9100',
+            'nn3523.privatehost.com:9100',
+            'nn3524.privatehost.com:9100',
+            'nn3525.privatehost.com:9100',
+            'nn3526.privatehost.com:9100',
+            'nn3787.privatehost.com:9100',
+            'nn3788.privatehost.com:9100',
+            'nn3789.privatehost.com:9100',
+            'nn3410.privatehost.com:9100',
+            'nn3851.privatehost.com:9100',
+            'nn3852.privatehost.com:9100',
+            'nn3853.privatehost.com:9100',
+            'nn3854.privatehost.com:9100',
+            'nn3855.privatehost.com:9100',
+            'nn3856.privatehost.com:9100',
+            'nn3857.privatehost.com:9100',
+            'nn3858.privatehost.com:9100',
+            'nn3859.privatehost.com:9100',
+            'nn3860.privatehost.com:9100',
+            'nn3861.privatehost.com:9100',
+            'nn3862.privatehost.com:9100',
+            'nn3863.privatehost.com:9100',
+            'nn3864.privatehost.com:9100',
+            'nn3865.privatehost.com:9100',
+            'nn3866.privatehost.com:9100',
+            'nn3410.privatehost.com:9100',
+            'nn3527.privatehost.com:9100',
+            'nn4001.privatehost.com:9100',
+            'nn4003.privatehost.com:9100',
+            'nn4005.privatehost.com:9100',
+            'nn4007.privatehost.com:9100',
+            'nn4009.privatehost.com:9100',
+            'nn4011.privatehost.com:9100',
+            'nn4012.privatehost.com:9100',
+            'nn4013.privatehost.com:9100',
+            'nn4014.privatehost.com:9100',
+            'nn4015.privatehost.com:9100',
+            'nn4016.privatehost.com:9100',
+            'nn4017.privatehost.com:9100',
+            'nn4018.privatehost.com:9100',
+            'nn2497.privatehost.com:9100',
+            'nn2552.privatehost.com:9100',
+            'nn2505.privatehost.com:9100',
+            'nn2501.privatehost.com:9100',
+            'nn3411.privatehost.com:9100',
+            'nn2498.privatehost.com:9100',
+            'nn2642.privatehost.com:9100']
+
+

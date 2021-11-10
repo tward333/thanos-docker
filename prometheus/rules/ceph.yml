@@ -1,0 +1,461 @@
+groups:
+  - name: cluster health
+    rules:
+      - alert: health missing
+        expr: absent(ceph_health_status) == 1
+        for: 5m
+        labels:
+          severity: pagepaul
+          type: ceph_tward
+        annotations:
+          description: >
+            ceph_health_status is missing entirely, paul probably added new mgrs and forgot to update prometheus again 
+      - alert: health error
+        expr: ceph_health_status == 2
+        for: 5m
+        labels:
+          severity: ignore
+          type: ceph_default
+        annotations:
+          description: >
+            Ceph in HEALTH_ERROR state for more than 5 minutes.
+            Please check "ceph health detail" for more information.
+
+      - alert: health warn
+        expr: ceph_health_status == 1
+        for: 15m
+        labels:
+          severity: ignore
+          type: ceph_default
+        annotations:
+          description: >
+            Ceph has been in HEALTH_WARN for more than 15 minutes.
+            Please check "ceph health detail" for more information.
+
+  - name: mon
+    rules:
+      - alert: low monitor quorum count
+        expr: sum(ceph_mon_quorum_status) < 3
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: |
+            Monitor count in quorum is below three.
+
+            Only {{ $value }} of {{ with query "count(ceph_mon_quorum_status)" }}{{ . | first | value }}{{ end }} monitors are active.
+
+            The following monitors are down:
+            {{- range query "(ceph_mon_quorum_status == 0) + on(ceph_daemon) group_left(hostname) (ceph_mon_metadata * 0)" }}
+              - {{ .Labels.ceph_daemon }} on {{ .Labels.hostname }}
+            {{- end }}
+
+  - name: osd
+    rules:
+      - alert: 10% OSDs down
+        expr: count(ceph_osd_up == 0) / count(ceph_osd_up) * 100 >= 10
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: |
+            {{ $value | humanize }}% or {{ with query "count(ceph_osd_up == 0)" }}{{ . | first | value }}{{ end }} of {{ with query "count(ceph_osd_up)" }}{{ . | first | value }}{{ end }} OSDs are down (≥ 10%).
+
+            The following OSDs are down:
+            {{- range query "(ceph_osd_up * on(ceph_daemon) group_left(hostname) ceph_osd_metadata) == 0" }}
+              - {{ .Labels.ceph_daemon }} on {{ .Labels.hostname }}
+            {{- end }}
+
+      - alert: OSD down
+        expr: count(ceph_osd_up == 0) > 0
+        for: 15m
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: |
+            {{ $s := "" }}{{ if gt $value 1.0 }}{{ $s = "s" }}{{ end }}
+            {{ $value }} OSD{{ $s }} down for more than 15 minutes.
+
+            {{ $value }} of {{ query "count(ceph_osd_up)" | first | value }} OSDs are down.
+
+            The following OSD{{ $s }} {{ if eq $s "" }}is{{ else }}are{{ end }} down:
+              {{- range query "(ceph_osd_up * on(ceph_daemon) group_left(hostname) ceph_osd_metadata) == 0"}}
+                - {{ .Labels.ceph_daemon }} on {{ .Labels.hostname }}
+              {{- end }}
+
+      - alert: OSDs near full
+        expr: |
+          (
+            ((ceph_osd_stat_bytes_used / ceph_osd_stat_bytes) and on(ceph_daemon) ceph_osd_up == 1)
+            * on(ceph_daemon) group_left(hostname) ceph_osd_metadata
+          ) * 100 > 90
+        for: 5m
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: >
+            OSD {{ $labels.ceph_daemon }} on {{ $labels.hostname }} is
+            dangerously full: {{ $value | humanize }}%
+
+      - alert: flapping OSD
+        expr: |
+          (
+            rate(ceph_osd_up[5m])
+            * on(ceph_daemon) group_left(hostname) ceph_osd_metadata
+          ) * 60 > 1
+        labels:
+          severity: untagged
+          type: ceph_default
+        annotations:
+          description: >
+            OSD {{ $labels.ceph_daemon }} on {{ $labels.hostname }} was
+            marked down and back up at {{ $value | humanize }} times once a
+            minute for 5 minutes.
+
+      # alert on high deviation from average PG count
+      - alert: high pg count deviation
+        expr: |
+          abs(
+            (
+              (ceph_osd_numpg > 0) - on (job) group_left avg(ceph_osd_numpg > 0) by (job)
+            ) / on (job) group_left avg(ceph_osd_numpg > 0) by (job)
+          ) * on(ceph_daemon) group_left(hostname) ceph_osd_metadata > 0.30
+        for: 5m
+        labels:
+          severity: ignore
+          type: ceph_default
+        annotations:
+          description: >
+            OSD {{ $labels.ceph_daemon }} on {{ $labels.hostname }} deviates
+            by more than 30% from average PG count.
+      # alert on high commit latency...but how high is too high
+  - name: mds
+    rules:
+    # no mds metrics are exported yet
+  - name: mgr
+    rules:
+    # no mgr metrics are exported yet
+  - name: pgs
+    rules:
+      - alert: pgs inactive
+        expr: ceph_pool_metadata * on(pool_id,instance) group_left() (ceph_pg_total - ceph_pg_active) > 0
+        for: 5m
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: >
+            {{ $value }} PGs have been inactive for more than 5 minutes in pool {{ $labels.name }}.
+            Inactive placement groups aren't able to serve read/write
+            requests.
+      - alert: pgs unclean
+        #expr: ceph_pool_metadata * on(pool_id,instance) group_left() (ceph_pg_total - ceph_pg_clean) > 0
+        #expr: ceph_pool_metadata * on(pool_id, instance) group_left() (ceph_pg_total - (ceph_pg_clean + ceph_pg_backfilling)) > 0
+        expr: ceph_pool_metadata * on(pool_id, instance) group_left() (ceph_pg_total - (ceph_pg_clean + ceph_pg_remapped))  > 0
+        for: 15m
+        labels:
+          severity: untagged
+          type: ceph_default
+        annotations:
+          description: >
+            {{ $value }} PGs haven't been clean for more than 15 minutes in pool {{ $labels.name }}.
+            Unclean PGs haven't been able to completely recover from a
+            previous failure.
+      - alert: pgs degraded
+        expr: ceph_pool_metadata * on(pool_id,instance) group_left() (ceph_pg_degraded) > 0
+        for: 5m
+        labels:
+          severity: pagepaul
+          type: ceph_tward
+        annotations:
+          description: >
+            {{ $value }} PGs are degraded for more than 5 minutes in {{ $labels.name }}
+  - name: nodes
+    rules:
+      - alert: root volume full
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 5
+        for: 5m
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: >
+            Root volume (OSD and MON store) is dangerously full: {{ $value | humanize }}% free.
+
+      # alert on nic packet errors and drops rates > 1% packets/s
+      - alert: network packets dropped
+        expr: |
+          (
+            increase(node_network_receive_drop_total{device!="lo"}[1m]) +
+            increase(node_network_transmit_drop_total{device!="lo"}[1m])
+          ) / (
+            increase(node_network_receive_packets_total{device!="lo"}[1m]) +
+            increase(node_network_transmit_packets_total{device!="lo"}[1m])
+          ) >= 0.0001 or (
+            increase(node_network_receive_drop_total{device!="lo"}[1m]) +
+            increase(node_network_transmit_drop_total{device!="lo"}[1m])
+          ) >= 10
+        labels:
+          severity: untagged
+          type: ceph_default
+        annotations:
+          description: >
+            Node {{ $labels.instance }} experiences packet drop > 0.01% or >
+            10 packets/s on interface {{ $labels.device }}.
+
+      - alert: network packet errors
+        expr: |
+          (
+            increase(node_network_receive_errs_total{device!="lo"}[1m]) +
+            increase(node_network_transmit_errs_total{device!="lo"}[1m])
+          ) / (
+            increase(node_network_receive_packets_total{device!="lo"}[1m]) +
+            increase(node_network_transmit_packets_total{device!="lo"}[1m])
+          ) >= 0.0001 or (
+            increase(node_network_receive_errs_total{device!="lo"}[1m]) +
+            increase(node_network_transmit_errs_total{device!="lo"}[1m])
+          ) >= 10
+        labels:
+          severity: untagged
+          type: ceph_default
+        annotations:
+          description: >
+            Node {{ $labels.instance }} experiences packet errors > 0.01% or
+            > 10 packets/s on interface {{ $labels.device }}.
+
+      - alert: storage filling up
+        expr: |
+          predict_linear(node_filesystem_free_bytes[2d], 3600 * 24 * 5) *
+          on(instance) group_left(nodename) node_uname_info < 0
+        labels:
+          severity: untagged
+          type: ceph_default
+        annotations:
+          description: >
+            Mountpoint {{ $labels.mountpoint }} on {{ $labels.nodename }}
+            will be full in less than 5 days assuming the average fill-up
+            rate of the past 48 hours.
+
+      - alert: MTU Mismatch
+        expr: node_network_mtu_bytes{device!="lo"} != on() group_left() (quantile(0.5, node_network_mtu_bytes{device!="lo"}))
+        labels:
+          severity: untagged
+          type: ceph_default
+          oid: 1.3.6.1.4.1.50495.15.1.2.8.5
+        annotations:
+          description: >
+            Node {{ $labels.instance }} has a different MTU size ({{ $value }})
+            than the median value on device {{ $labels.device }}.
+
+  - name: pools
+    rules:
+      - alert: pool full
+        expr: |
+          ceph_pool_stored / (ceph_pool_stored + ceph_pool_max_avail)
+          * on(pool_id) group_right ceph_pool_metadata * 100 > 90
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: Pool {{ $labels.name }} at {{ $value | humanize }}% capacity.
+
+      - alert: pool filling up
+        expr: |
+          (
+            predict_linear(ceph_pool_stored[2d], 3600 * 24 * 5)
+            >= ceph_pool_stored + ceph_pool_max_avail
+          ) * on(pool_id) group_left(name) ceph_pool_metadata
+        labels:
+          severity: untagged
+          type: ceph_default
+        annotations:
+          description: >
+            Pool {{ $labels.name }} will be full in less than 5 days
+            assuming the average fill-up rate of the past 48 hours.
+
+  - name: healthchecks
+    rules:
+      - alert: Slow OSD Ops
+        expr: ceph_healthcheck_slow_ops > 0
+        for: 1m
+        labels:
+          severity: pagepaul
+          type: ceph_default
+        annotations:
+          description: >
+            {{ $value }} OSD requests are taking too long to process (osd_op_complaint_time exceeded)
+  - name: grafana migrated
+    rules:
+      - alert: available ram
+        expr: |
+          (
+            node_memory_MemAvailable < 10000000000 or
+            node_memory_MemAvailable{instance=~"ms3213.twardhost.com:9100|ms3212.twardhost.com:9100|ms3211.twardhost.com:9100"} < 30000000000
+          ) 
+        for: 5m
+        labels:
+          severity: log
+          type: ceph_tward
+        annotations:
+          description: >
+            Not enough RAMs. Download more RAMs on {{ $labels.instance }}
+      - alert: time std-dev
+        expr: stddev(node_time) > 80
+        for: 5m
+        labels:
+          severity: pagepaul
+          type: ceph_tward
+        annotations:
+          description: >
+            Time is off on  {{ $labels.instance }} by {{ $value }} 
+      - alert: ecc errors
+        expr: |
+          (
+            node_edac_correctable_errors_total > 0 or
+            node_edac_uncorrectable_errors_total > 0
+          ) 
+        for: 5m
+        labels:
+          severity: actionable
+          type: ceph_tward
+        annotations:
+          description: >
+            edac errors on  {{ $labels.instance }} count={{ $value }} 
+      - alert: Estimated P/E Cycles Remaining
+        expr: smartmon_wear_leveling_count_value < 25
+        for: 5m
+        labels:
+          severity: actionable
+          type: ceph_tward
+        annotations:
+          description: >
+            Wear leveling looks off for  {{ $labels.instance }} {{ $labels.disk }} {{ $value }} 
+      - alert: Hybrid OSDs Disk Util 
+        expr: |
+          (
+            irate(node_disk_io_time_ms{device=~"sdd", instance=~"ms.*"}[5m])/1000 > 0.5
+            or irate(node_disk_io_time_ms{device=~"sde", instance=~"ms.*"}[5m])/1000 > 0.5
+            or irate(node_disk_io_time_ms{device=~"sdf", instance=~"ms.*"}[5m])/1000 > 0.5
+            or irate(node_disk_io_time_ms{device=~"sdg", instance=~"ms.*"}[5m])/1000 > 0.5
+            or irate(node_disk_io_time_ms{device=~"sdb", instance=~"ms.*"}[5m])/1000 > 0.5
+          ) 
+        for: 5m
+        labels:
+          severity: log
+          type: ceph_tward
+        annotations:
+          description: >
+            OSD io_time high for  {{ $labels.instance }} {{ $labels.disk }} 
+      - alert: Index per Shard
+        expr: rgw_index_objects_per_shard > 159000
+        for: 5m
+        labels:
+          severity: actionable
+          type: ceph_tward
+        annotations:
+          description: >
+              {{ $labels.bucket }} bucket needs re-sharding soon
+      - alert: Max PGs per OSD 
+        expr: max(ceph_osd_numpg) > 250
+        for: 5m
+        labels:
+          severity: actionable
+          type: ceph_tward
+        annotations:
+          description: >
+            Max PG per OSD is {{ $value }} 
+      - alert: Offline Uncorrectable Errors
+        expr: smartmon_offline_uncorrectable_raw_value > 0
+        for: 5m
+        labels:
+          severity: log
+          type: ceph_tward
+        annotations:
+          description: >
+            smartmon_offline_uncorrectable  {{ $labels.instance }} {{ $labels.disk }}  count={{ $value }} 
+      - alert: Reallocated Sector Count 
+        expr: smartmon_reallocated_sector_ct_raw_value > 50
+        for: 5m
+        labels:
+          severity: log
+          type: ceph_tward
+        annotations:
+          description: >
+            smartmon_reallocated_sector_ct  {{ $labels.instance }} {{ $labels.disk }}  count={{ $value }} 
+      - alert: SMART Drive Temp
+        expr: smartmon_temperature_celsius_raw_value{smart_id="194"} > 43
+        for: 5m
+        labels:
+          severity: log
+          type: ceph_tward
+        annotations:
+          description: >
+            smartmon_temperature_celsius  {{ $labels.instance }} {{ $labels.disk }}  temp={{ $value }} 
+      - alert: Slow Ops
+        expr: ceph_healthcheck_slow_ops > 0
+        for: 30s
+        labels:
+          severity: log
+          type: ceph_tward
+        annotations:
+          description: >
+            ceph_healthcheck_slow_ops  {{ $value }} 
+      - alert: Slow Ops
+        expr: ceph_healthcheck_slow_ops > 0
+        for: 2m
+        labels:
+          severity: pagepaul
+          type: ceph_tward
+        annotations:
+          description: >
+            ceph_healthcheck_slow_ops  {{ $value }} 
+      - alert: Uncorrectable Disk Errors
+        expr: smartmon_reported_uncorrect_raw_value > 0
+        for: 5m
+        labels:
+          severity: actionable
+          type: ceph_tward
+        annotations:
+          description: >
+            smartmon_reported_uncorrect  {{ $labels.instance }} {{ $labels.disk }}  count={{ $value }} 
+      - alert: cs2552 Ganesha Traffic In/Out
+        expr: |
+          irate(node_network_receive_bytes{device="bond0.12",instance="cs2552.twardhost.com:9100"}[3m]) * 8 > 5e+08 or irate(node_network_transmit_bytes{device="bond2.99",instance="cs2552.twardhost.com:9100"}[3m]) * -8 < -5e+08
+        for: 5m
+        labels:
+          severity: pagepaul 
+          type: ceph_tward
+        annotations:
+          description: >
+            transmit rate is outside range, check network on  {{ $labels.instance }} . Range is -500MB/s to 500MB/s  
+#      - alert: cs2552 Ganesha Traffic Recieve 
+#        expr: |
+#          irate(node_network_receive_bytes{instance="cs2552.twardhost.com:9100", device="bond0.12"}[3m])*8 > 500000000
+#        for: 5m
+#        labels:
+#          severity: pagepaul
+#          type: ceph_tward
+#        annotations:
+#          description: >
+#            recieve rate is outside range, check network on  {{ $labels.instance }} . Range is -500MB/s to 500MB/s  
+#      - alert: cs2552 Ganesha Traffic Transmit 
+#        expr: |
+#          irate(node_network_transmit_bytes{instance="cs2552.twardhost.com:9100", device="bond2.99"}[3m])*-8 < -500000000
+#        for: 5m
+#        labels:
+#          severity: pagepaul 
+#          type: ceph_tward
+#        annotations:
+#          description: >
+#            transmit rate is outside range, check network on  {{ $labels.instance }} . Range is -500MB/s to 500MB/s  
+      - alert: OSD df
+        expr: ceph_osd_stat_bytes_used > 10820000000000
+        for: 5m
+        labels:
+          severity: actionable
+          type: ceph_tward
+        annotations:
+          description: >
+             ceph_osd_stat_bytes_used high on  {{ $labels.ceph_daemon }} value={{ $value }} 

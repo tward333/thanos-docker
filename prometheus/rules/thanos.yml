@@ -1,0 +1,25 @@
+groups:
+- name: thanos-internal
+  rules:
+  # Alert on any compact halt errors
+  - alert: CompactHalted
+    expr: thanos_compact_halted == 1
+    for: 1h
+    labels:
+      severity: untagged
+      type: thanos-tward
+    annotations:
+      summary: "Instance {{ $labels.instance }} isn't healthy"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has thanos_compact_halted=1"
+  # Alert for any instance that is unreachable for >5 minutes.
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: pagetward
+      type: thanos-tward
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+
