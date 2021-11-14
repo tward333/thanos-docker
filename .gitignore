@@ -24,3 +24,5 @@ compact.log*
 *.swp
 ceph.log
 *.png
+
+grafana*.tar
