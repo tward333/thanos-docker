@@ -1,7 +1,0 @@
-type: S3
-config: 
-  bucket: thanos-data-bucket
-  access_key: myaccesskey
-  secret_key: mysecretkey
-  endpoint: localhost:9000
-  insecure: true

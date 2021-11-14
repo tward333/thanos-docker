@@ -24,36 +24,11 @@ rule_files:
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
-  - job_name: 'compact'
-    scrape_interval: 1m
-    static_configs:
-      - targets: ['thanos_compactor_snmp:10902',
-                  'thanos_compactor_ceph:10902',
-                  'thanos_compactor_other:10902']
-  - job_name: 'store'
-    scrape_interval: 1m
-    static_configs:
-      - targets: ['thanos_store_snmp:10902',
-                  'thanos_store_ceph:10902',
-                  'thanos_store_other:10902']
-  - job_name: 'sidecar'
-    scrape_interval: 1m
-    static_configs:
-      - targets: ['thanos_sidecar_snmp:10902',
-                  'thanos_sidecar_ceph:10902',
-                  'thanos_sidecar_selfmon:10902',
-                  'thanos_sidecar_other:10902']
-  - job_name: 'query'
-    scrape_interval: 1m
-    static_configs:
-      - targets: ['thanos_querier:10902']
   - job_name: 'prometheus'
     scrape_interval: 1m
     static_configs:
-      - targets: ['prometheus_snmp:9001',
-                  'prometheus_ceph:9001',
-                  'prometheus_selfmon:9001',
-                  'prometheus_other:9001']
+      - targets: ['prometheus_oneoff:9001',
+                  'prometheus_selfmon:9001']
   - job_name: 'grafana'
     scrape_interval: 1m
     static_configs:
