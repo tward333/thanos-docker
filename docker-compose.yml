@@ -56,24 +56,16 @@ services:
       - "9004:9001"
 
 ### front-end components
-  grafana:
+  grafana2:
     image: "grafana/grafana"
     container_name: grafana2
-    user: root
     environment:
       - GF_USERS_ALLOW_SIGN_UP=false
     restart: always
     ports:
       - "3000:3000"
     volumes:
-    - './data/grafana/varlib/_data:/var/lib/grafana'
-    - './data/grafana/etc:/etc/grafana'
-    - './data/grafana/log:/var/log/grafana'
-    environment:
-      GF_RENDERING_SERVER_URL: http://grafrender2:8081/render
-      GF_RENDERING_CALLBACK_URL: http://grafana2:3000/
-      GF_LOG_FILTERS: rendering:debug
-  #      GF_LOG_LEVEL: debug
+    - 'grafana-storage:/var/lib/grafana'
 
 
 ### alert components
@@ -92,3 +84,7 @@ services:
       - 9093
     ports:
        - "9093:9093"
+
+volumes:
+  grafana-storage:
+

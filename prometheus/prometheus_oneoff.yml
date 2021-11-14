@@ -14,7 +14,7 @@ alerting:
   alertmanagers:
   - static_configs:
     - targets:
-      # - alertmanager:9093
+       - alertmanager:9093
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
@@ -24,29 +24,24 @@ rule_files:
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
-  - job_name: 'helpdesk'
-    static_configs:
-      - targets: ['nn.privatehost.com:8100',
-        'nn.privatehost.com:8100']
-  - job_name: 'bgplb'
-    scheme: https
-    static_configs:
-      - targets: ['bgplb.privatehost.com:443']
-  - job_name: 'postfix'
-    static_configs:
-      - targets: ['zimbra.privatehost.com:9154']
-  - job_name: 'projectstats'
-    static_configs:
-      - targets: ['cdncontroller1.privatehost.com:8082']
-  - job_name: 'powerdns'
-    static_configs:
-      - targets: [
-            'nn1825.privatehost.com:9120',
-            'nn1877.privatehost.com:9120',
-            'nn1877.privatehost.com:9121',
-            'nn1825.privatehost.com:9121']
-  - job_name: 'cdnstats'
+  - job_name: 'nginx-origin'
     scrape_interval: 5m
     static_configs:
       - targets: [
-           'cdncontroller3.privatehost.com:8081']
+           '192.168.5.83:9100',
+           '192.168.5.84:9100'
+                 ]
+  - job_name: 'nginx-web'
+    scrape_interval: 5m
+    static_configs:
+      - targets: [
+           '192.168.5.81:9100',
+           '192.168.5.82:9100'
+                 ]
+  - job_name: 'app'
+    scrape_interval: 5m
+    static_configs:
+      - targets: [
+           '192.168.5.91:9100',
+           '192.168.5.92:9100'
+                 ]
