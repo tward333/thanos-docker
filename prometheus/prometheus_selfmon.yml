@@ -25,11 +25,9 @@ rule_files:
 # Here it's Prometheus itself.
 scrape_configs:
   - job_name: 'prometheus'
-    scrape_interval: 1m
     static_configs:
       - targets: ['prometheus_oneoff:9001',
                   'prometheus_selfmon:9001']
   - job_name: 'grafana'
-    scrape_interval: 1m
     static_configs:
       - targets: ['grafana2:3000']
