@@ -1,3 +1,4 @@
+cd /opt/docker/prometheus
 #do the volume dump
 date=$(date +%Y%m%d%H%M)
 backupfile=grafana.$date.tar
