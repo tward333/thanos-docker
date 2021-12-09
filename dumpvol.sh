@@ -9,5 +9,5 @@ rclone copy $backupfile locals3:/deployblob/prometheus/
 
 
 #copy prometheus data directly to repo
-rclone copy  ./data/prometheus/other/ locals3:/deployblob/prometheus/data/
+rclone sync  ./data/prometheus/other/ locals3:/deployblob/prometheus/data/
 
