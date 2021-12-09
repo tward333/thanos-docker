@@ -14,4 +14,3 @@ docker run --rm -v prometheus_grafana-storage:/data  -v $(pwd):/backup ubuntu ba
 
 #pull down prometheus datadir directly
 rclone copy locals3:/deployblob/prometheus/data/ ./data/prometheus/other/
-~                                                                                
