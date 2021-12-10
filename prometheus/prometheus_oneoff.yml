@@ -18,8 +18,7 @@ alerting:
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+   - "rules/oneoff.yml"
 
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
@@ -53,3 +52,30 @@ scrape_configs:
     static_configs:
       - targets: ['192.168.5.1:9000']
 
+  - job_name: 'blackbox_http_external'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]  # Look for a HTTP 200 response.
+    static_configs:
+      - targets:
+        - https://app.mycatsaredicks.com
+        - https://blue.mycatsaredicks.com
+        - https://green.mycatsaredicks.com
+        - https://horigin.mycatsaredicks.com
+        - http://ig1.vmlocal
+        - http://ig2.vmlocal
+        - http://ig-keepalived.vmlocal
+        - http://content1.vmlocal
+        - http://content2.vmlocal
+        - http://content-keepalived.vmlocal
+        - http://app1.vmlocal:8888
+        - http://app2.vmlocal:8888
+        - http://app3.vmlocal:8888
+        - http://app4.vmlocal:8888
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.5.85:9115  # The blackbox exporter's real hostname:port.

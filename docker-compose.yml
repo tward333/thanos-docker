@@ -6,7 +6,8 @@ services:
 #oldver 2.25.2
 
   prometheus_oneoff:
-    image: prom/prometheus:v2.30.3
+#    image: prom/prometheus:v2.30.3
+    image: prom/prometheus:latest
     container_name: prometheus_oneoff
     user: root
     volumes:
